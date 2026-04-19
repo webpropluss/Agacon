@@ -169,22 +169,19 @@ tr.no-buyer{border-left:3px solid var(--gold);}
 
 <div class="toast" id="toast"></div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, get, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAKCrWUfmoDPLD_rT_vZflARZVlpOdBlk8",
-  authDomain: "agacon-640a5.firebaseapp.com",
-  databaseURL: "https://agacon-640a5-default-rtdb.firebaseio.com/",
-  projectId: "agacon-640a5",
-  storageBucket: "agacon-640a5.firebasestorage.app",
-  messagingSenderId: "965816232393",
-  appId: "1:965816232393:web:a6fd41dfea9f68b2bbe018"
-};
-
-const fbApp = initializeApp(FIREBASE_CONFIG);
-const db    = getDatabase(fbApp);
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyAKCrWUfmoDPLD_rT_vZflARZVlpOdBlk8",
+    authDomain: "agacon-640a5.firebaseapp.com",
+    databaseURL: "https://agacon-640a5-default-rtdb.firebaseio.com/",
+    projectId: "agacon-640a5",
+    storageBucket: "agacon-640a5.firebasestorage.app",
+    messagingSenderId: "965816232393",
+    appId: "1:965816232393:web:a6fd41dfea9f68b2bbe018"
+  });
+  const db = firebase.database();
 
 let currentRemateId = null;
 let allLotes        = [];
@@ -206,7 +203,7 @@ onValue(connRef, snap => {
 
 // ── Load remates list
 window.loadRematesList = async function() {
-  const snap = await get(ref(db, 'remates'));
+  const snap = await db.ref('remates').once('value');
   const data = snap.val();
   const sel  = document.getElementById('remate-sel');
   sel.innerHTML = '<option value="">— Seleccionar remate —</option>';
@@ -233,7 +230,7 @@ window.loadRemate = function(remateId) {
   currentRemateId = remateId;
   localStorage.setItem('agacon_remateId', remateId);
   // Listen real-time
-  onValue(ref(db, `remates/${remateId}/lotes`), snap => {
+  db.ref('remates/' + remateId + '/lotes').on('value', function(snap) {
     const data = snap.val() || {};
     allLotes = Object.entries(data).map(([key, v]) => ({...v, _key: key}))
       .sort((a,b) => a.orden - b.orden);
@@ -320,9 +317,9 @@ window.saveComprador = async function() {
   if (!nombre) { toast('Ingresá el nombre del comprador', true); return; }
   if (!currentLotKey || !currentRemateId) return;
 
-  await set(ref(db, `remates/${currentRemateId}/lotes/${currentLotKey}/comprador`),    nombre);
-  await set(ref(db, `remates/${currentRemateId}/lotes/${currentLotKey}/compradorCI`),  ci);
-  await set(ref(db, `remates/${currentRemateId}/lotes/${currentLotKey}/compradorTel`), tel);
+  await db.ref('remates/' + currentRemateId + '/lotes/' + currentLotKey + '/comprador').set(nombre);
+  await db.ref('remates/' + currentRemateId + '/lotes/' + currentLotKey + '/compradorCI').set(ci);
+  await db.ref('remates/' + currentRemateId + '/lotes/' + currentLotKey + '/compradorTel').set(tel);
 
   closeModal();
   toast('Comprador asignado ✓');

@@ -657,14 +657,13 @@ html,body{height:100%;background:#0d0d0d;color:#f0f0f0;font-family:'Segoe UI',Ar
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script type="module">
+<script>
 
-  // ── FIREBASE ──
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue, push, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-  const FB = {
+  // ── FIREBASE COMPAT (no module imports needed) ──
+  const FB_CONFIG = {
     apiKey: "AIzaSyAKCrWUfmoDPLD_rT_vZflARZVlpOdBlk8",
     authDomain: "agacon-640a5.firebaseapp.com",
     databaseURL: "https://agacon-640a5-default-rtdb.firebaseio.com/",
@@ -673,43 +672,42 @@ html,body{height:100%;background:#0d0d0d;color:#f0f0f0;font-family:'Segoe UI',Ar
     messagingSenderId: "965816232393",
     appId: "1:965816232393:web:a6fd41dfea9f68b2bbe018"
   };
-  const fbApp = initializeApp(FB);
-  const db    = getDatabase(fbApp);
+  firebase.initializeApp(FB_CONFIG);
+  const db = firebase.database();
   let remateId = null;
 
-  async function initRemate() {
+  function initRemate() {
     const today = new Date().toISOString().split('T')[0];
-    const remateRef = push(ref(db, 'remates'));
+    const remateRef = db.ref('remates').push();
     remateId = remateRef.key;
-    await set(remateRef, { fecha: today, creadoEn: Date.now(), estado: 'activo', tipoCambio: 6.96 });
+    remateRef.set({ fecha: today, creadoEn: Date.now(), estado: 'activo' });
     localStorage.setItem('agacon_remateId', remateId);
-    toast('Remate iniciado en Firebase: ' + remateId.slice(-6));
+    toast('Remate iniciado: ' + remateId.slice(-6));
+    listenBuyerUpdates();
   }
 
-  async function syncLotToFirebase(lot) {
+  function syncLotToFirebase(lot) {
     if (!remateId) return;
     const key = 'lot_' + lot.lote + '_' + String(lot.orden).replace('.','_');
-    const path = 'remates/' + remateId + '/lotes/' + key;
-    await set(ref(db, path), {
+    db.ref('remates/' + remateId + '/lotes/' + key).set({
       orden: lot.orden, lote: lot.lote,
       propietario: lot.propietario, estancia: lot.estancia,
       cantidad: lot.cantidad, categoria: lot.categoria,
       raza: lot.raza, edad: lot.edad, obs: lot.obs,
       precio: lot.precio, peso: lot.peso, saved: lot.saved,
       comprador: lot.comprador || '', compradorCI: lot.compradorCI || '',
-      compradorTel: lot.compradorTel || '', syncedAt: Date.now(),
+      compradorTel: lot.compradorTel || '', syncedAt: Date.now()
     });
   }
 
   function listenBuyerUpdates() {
     if (!remateId) return;
-    const path = 'remates/' + remateId + '/lotes';
-    onValue(ref(db, path), (snap) => {
+    db.ref('remates/' + remateId + '/lotes').on('value', function(snap) {
       const data = snap.val();
       if (!data) return;
       let updated = false;
-      Object.values(data).forEach(fbLot => {
-        const local = lots.find(l => l.lote === fbLot.lote && l.orden === fbLot.orden);
+      Object.values(data).forEach(function(fbLot) {
+        const local = lots.find(function(l) { return l.lote === fbLot.lote && l.orden === fbLot.orden; });
         if (local && fbLot.comprador && !local.comprador) {
           local.comprador    = fbLot.comprador;
           local.compradorCI  = fbLot.compradorCI  || '';
@@ -717,7 +715,7 @@ html,body{height:100%;background:#0d0d0d;color:#f0f0f0;font-family:'Segoe UI',Ar
           updated = true;
         }
       });
-      if (updated) { renderSidebar(); renderBuyer(lots[cur]); toast('Comprador asignado desde módulo compradores'); }
+      if (updated) { renderSidebar(); renderBuyer(lots[cur]); toast('Comprador asignado remotamente ✓'); }
     });
   }
 
@@ -829,7 +827,7 @@ function startRemate(){
   if(!lots.length) return;
   cur=0; showView('v-op'); renderOp(); updateDate();
   setInterval(updateDate,30000);
-  initRemate().then(() => listenBuyerUpdates());
+  initRemate();
 }
 
 // ═══════════════════════════════════════
@@ -1215,19 +1213,6 @@ function saveNewLot() {
   toast(`✓ Lote ${lote} agregado en posición ${newOrden.toFixed(1)} — seguís en el lote actual`);
 }
 
-
-// ── Expose all functions to window for onclick handlers ──
-window.startRemate=startRemate; window.loadDemo=loadDemo;
-window.navigate=navigate; window.goTo=goTo;
-window.adjPrice=adjPrice; window.resetPrice=resetPrice;
-window.onPesoChange=onPesoChange; window.saveLot=saveLot;
-window.showPublic=showPublic; window.openBuyerModal=openBuyerModal;
-window.openAddLotModal=openAddLotModal; window.openExportModal=openExportModal;
-window.saveBuyer=saveBuyer; window.saveNewLot=saveNewLot;
-window.onModalLotChange=onModalLotChange; window.updateAddLotPreview=updateAddLotPreview;
-window.exportJSON=exportJSON; window.exportCSV=exportCSV;
-window.toggleSidebar=toggleSidebar; window.closeModal=closeModal;
-window.openModal=openModal; window.showView=showView;
 </script>
 </body>
 </html>
