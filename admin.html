@@ -484,6 +484,11 @@ window.toast = function(msg, err=false) {
 }
 
 loadRematesList();
+
+// ── Expose to window ──
+window.loadRematesList=loadRematesList; window.loadRemate=loadRemate;
+window.recalc=recalc; window.showTab=showTab;
+window.exportExcel=exportExcel; window.exportCSV=exportCSV; window.exportJSON=exportJSON;
 </script>
 </body>
 </html>

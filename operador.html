@@ -1215,6 +1215,19 @@ function saveNewLot() {
   toast(`✓ Lote ${lote} agregado en posición ${newOrden.toFixed(1)} — seguís en el lote actual`);
 }
 
+
+// ── Expose all functions to window for onclick handlers ──
+window.startRemate=startRemate; window.loadDemo=loadDemo;
+window.navigate=navigate; window.goTo=goTo;
+window.adjPrice=adjPrice; window.resetPrice=resetPrice;
+window.onPesoChange=onPesoChange; window.saveLot=saveLot;
+window.showPublic=showPublic; window.openBuyerModal=openBuyerModal;
+window.openAddLotModal=openAddLotModal; window.openExportModal=openExportModal;
+window.saveBuyer=saveBuyer; window.saveNewLot=saveNewLot;
+window.onModalLotChange=onModalLotChange; window.updateAddLotPreview=updateAddLotPreview;
+window.exportJSON=exportJSON; window.exportCSV=exportCSV;
+window.toggleSidebar=toggleSidebar; window.closeModal=closeModal;
+window.openModal=openModal; window.showView=showView;
 </script>
 </body>
 </html>
