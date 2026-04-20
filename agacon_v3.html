@@ -422,14 +422,14 @@ tr.pend{border-left:3px solid var(--gold)}
     <div style="flex:1;display:flex;flex-direction:column;gap:.7rem;padding:.7rem 1rem;min-height:0;">
 
         <!-- Labels -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;flex-shrink:0;">
+        <div style="display:grid;grid-template-columns:3fr 3fr 4fr;gap:.8rem;flex-shrink:0;">
           <div style="text-align:center;font-size:clamp(1.4rem,3vw,2.8rem);font-weight:900;letter-spacing:5px;color:#fff;text-transform:uppercase;">LOTE</div>
           <div style="text-align:center;font-size:clamp(1.4rem,3vw,2.8rem);font-weight:900;letter-spacing:5px;color:#fff;text-transform:uppercase;">CANTIDAD</div>
           <div style="text-align:center;font-size:clamp(1.4rem,3vw,2.8rem);font-weight:900;letter-spacing:5px;color:#fff;text-transform:uppercase;">PRECIO $us.</div>
         </div>
 
-        <!-- 3 red boxes same color and height -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;flex:1;min-height:0;">
+        <!-- 3 red boxes - LOTE+CANT 60%, PRECIO 40% -->
+        <div style="display:grid;grid-template-columns:3fr 3fr 4fr;gap:.8rem;flex:1;min-height:0;">
           <div style="background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:clamp(5rem,15vw,15rem);font-weight:900;color:#fff;text-shadow:0 4px 28px rgba(0,0,0,.5);position:relative;overflow:hidden;">
             <div style="position:absolute;top:0;left:0;right:0;height:48%;background:rgba(255,255,255,.07);border-radius:12px 12px 0 0;"></div>
             <span id="pf-lote" style="z-index:1;">—</span>
@@ -438,14 +438,14 @@ tr.pend{border-left:3px solid var(--gold)}
             <div style="position:absolute;top:0;left:0;right:0;height:48%;background:rgba(255,255,255,.07);border-radius:12px 12px 0 0;"></div>
             <span id="pf-cant" style="z-index:1;">—</span>
           </div>
-          <div style="background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:clamp(5rem,15vw,15rem);font-weight:900;color:#fff;text-shadow:0 4px 28px rgba(0,0,0,.5);position:relative;overflow:hidden;">
+          <div style="background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:clamp(3.5rem,10vw,11rem);font-weight:900;color:#fff;text-shadow:0 4px 28px rgba(0,0,0,.5);position:relative;overflow:hidden;padding:0 .5rem;">
             <div style="position:absolute;top:0;left:0;right:0;height:48%;background:rgba(255,255,255,.07);border-radius:12px 12px 0 0;"></div>
-            <span id="pf-price" style="z-index:1;">0</span>
+            <span id="pf-price" style="z-index:1;text-align:center;">0</span>
           </div>
         </div>
 
         <!-- Bottom: green bar + blue peso bar — misma altura -->
-        <div style="display:grid;grid-template-columns:2fr 1fr;gap:.8rem;flex-shrink:0;height:clamp(90px,15vh,150px);">
+        <div style="display:grid;grid-template-columns:3fr 2fr;gap:.8rem;flex-shrink:0;height:clamp(90px,15vh,150px);">
           <div style="background:var(--green);border-radius:12px;display:flex;align-items:center;justify-content:space-around;padding:.5rem 1rem;gap:.3rem;">
             <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
               <span style="font-size:clamp(.55rem,1vw,.85rem);letter-spacing:2px;color:rgba(255,255,255,.8);text-transform:uppercase;font-weight:700;">CATEGORÍA</span>
@@ -464,7 +464,7 @@ tr.pend{border-left:3px solid var(--gold)}
           </div>
           <div style="background:var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.4rem .8rem;">
             <span style="font-size:clamp(.8rem,1.5vw,1.4rem);letter-spacing:2px;color:rgba(255,255,255,.9);font-weight:900;white-space:nowrap;">PESO:</span>
-            <span id="pf-peso" style="font-family:'Courier New',monospace;font-size:clamp(2rem,7vw,7rem);font-weight:900;color:#fff;line-height:1;">—</span>
+            <span id="pf-peso" style="font-family:'Courier New',monospace;font-size:clamp(2.5rem,9vw,9rem);font-weight:900;color:#fff;line-height:1;">—</span>
             <span style="font-size:clamp(.8rem,1.5vw,1.4rem);letter-spacing:2px;color:rgba(255,255,255,.9);font-weight:900;">KG</span>
           </div>
         </div>
