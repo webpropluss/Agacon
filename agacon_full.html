@@ -525,6 +525,22 @@ tr.pend{border-left:3px solid var(--gold)}
       <div class="stat-card"><div class="sv" id="as-comision" style="color:var(--gold);font-size:1.1rem">$0</div><div class="sl">Comisión total</div></div>
       <div class="stat-card"><div class="sv" id="as-sincomp" style="color:var(--red)">0</div><div class="sl">Sin comprador</div></div>
     </div>
+    <!-- Bank account fields -->
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:.8rem 1rem;display:flex;flex-direction:column;gap:.6rem;flex-shrink:0;">
+      <div style="font-size:.62rem;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:700;">🏦 Datos Bancarios (se agregan al Excel)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;">
+        <div class="fgroup"><label>Banco</label><input type="text" id="bank-nombre" placeholder="Ej: BANCO UNION" style="background:#111;border:1px solid var(--border);color:#fff;border-radius:5px;padding:.35rem .6rem;font-size:.82rem;width:100%"></div>
+        <div class="fgroup"><label>N° Cuenta</label><input type="text" id="bank-cuenta" placeholder="Ej: 1-54990011" style="background:#111;border:1px solid var(--border);color:#fff;border-radius:5px;padding:.35rem .6rem;font-size:.82rem;width:100%"></div>
+        <div class="fgroup"><label>Tipo</label><input type="text" id="bank-tipo" placeholder="Ej: CAJA DE AHORRO - Bs." style="background:#111;border:1px solid var(--border);color:#fff;border-radius:5px;padding:.35rem .6rem;font-size:.82rem;width:100%"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.6rem;">
+        <div class="fgroup"><label>Titular 1</label><input type="text" id="bank-titular1" placeholder="Nombre completo" style="background:#111;border:1px solid var(--border);color:#fff;border-radius:5px;padding:.35rem .6rem;font-size:.82rem;width:100%"></div>
+        <div class="fgroup"><label>CI Titular 1</label><input type="text" id="bank-ci1" placeholder="Ej: 3228076 SC" style="background:#111;border:1px solid var(--border);color:#fff;border-radius:5px;padding:.35rem .6rem;font-size:.82rem;width:100%"></div>
+        <div class="fgroup"><label>Titular 2</label><input type="text" id="bank-titular2" placeholder="Nombre completo" style="background:#111;border:1px solid var(--border);color:#fff;border-radius:5px;padding:.35rem .6rem;font-size:.82rem;width:100%"></div>
+        <div class="fgroup"><label>CI Titular 2</label><input type="text" id="bank-ci2" placeholder="Ej: E-0015917" style="background:#111;border:1px solid var(--border);color:#fff;border-radius:5px;padding:.35rem .6rem;font-size:.82rem;width:100%"></div>
+      </div>
+    </div>
+
     <div class="export-bar">
       <h3>Exportar</h3>
       <button class="btn btn-gold" onclick="admExportExcel()">⬇ Excel completo (4 hojas)</button>
@@ -1306,33 +1322,209 @@ function admShowTab(tab,btn) {
   btn.classList.add('on');
 }
 
+function getBankData() {
+  return {
+    nombre:   (document.getElementById('bank-nombre')||{}).value||'',
+    cuenta:   (document.getElementById('bank-cuenta')||{}).value||'',
+    tipo:     (document.getElementById('bank-tipo')||{}).value||'',
+    titular1: (document.getElementById('bank-titular1')||{}).value||'',
+    ci1:      (document.getElementById('bank-ci1')||{}).value||'',
+    titular2: (document.getElementById('bank-titular2')||{}).value||'',
+    ci2:      (document.getElementById('bank-ci2')||{}).value||'',
+  };
+}
+
+function styleSheet(ws, headerRow, totalRows, numCols) {
+  if (!ws['!ref']) return;
+  var range = XLSX.utils.decode_range(ws['!ref']);
+  for (var R=range.s.r; R<=range.e.r; R++) {
+    for (var C=range.s.c; C<=range.e.c; C++) {
+      var addr = XLSX.utils.encode_cell({r:R,c:C});
+      if (!ws[addr]) ws[addr] = {v:'',t:'s'};
+      if (!ws[addr].s) ws[addr].s = {};
+      // Border on all cells
+      ws[addr].s.border = {
+        top:{style:'thin',color:{rgb:'CCCCCC'}},
+        bottom:{style:'thin',color:{rgb:'CCCCCC'}},
+        left:{style:'thin',color:{rgb:'CCCCCC'}},
+        right:{style:'thin',color:{rgb:'CCCCCC'}}
+      };
+      // Header row style
+      if (R===headerRow) {
+        ws[addr].s.fill = {fgColor:{rgb:'1F4E79'}};
+        ws[addr].s.font = {bold:true,color:{rgb:'FFFFFF'},name:'Calibri',sz:10};
+        ws[addr].s.alignment = {horizontal:'center',vertical:'center',wrapText:true};
+      }
+      // Total rows
+      else if (totalRows.indexOf(R)>=0) {
+        ws[addr].s.fill = {fgColor:{rgb:'E8F5E9'}};
+        ws[addr].s.font = {bold:true,name:'Calibri',sz:10};
+      }
+      // Title rows
+      else if (R<headerRow) {
+        ws[addr].s.fill = {fgColor:{rgb:'27AE60'}};
+        ws[addr].s.font = {bold:true,color:{rgb:'FFFFFF'},name:'Calibri',sz:R===0?14:11};
+        ws[addr].s.alignment = {horizontal:'center',vertical:'center'};
+      }
+      // Data rows alternating
+      else {
+        ws[addr].s.fill = {fgColor:{rgb: R%2===0?'F5F5F5':'FFFFFF'}};
+        ws[addr].s.font = {name:'Calibri',sz:10};
+        ws[addr].s.alignment = {vertical:'center'};
+        // Numbers right-aligned
+        if (typeof (ws[addr].v)==='number') ws[addr].s.alignment.horizontal='right';
+      }
+    }
+  }
+  // Column widths
+  ws['!cols'] = [];
+  for (var i=0;i<numCols;i++) ws['!cols'].push({wch: i===1?25:i===2?12:i===0?5:10});
+}
+
 function admExportExcel() {
   if(!admLotes.length){toast('No hay datos',true);return;}
   var tc=parseFloat(document.getElementById('adm-tc').value)||6.96;
   var com=parseFloat(document.getElementById('adm-com').value)/100||0.03;
+  var bank=getBankData();
   var wb=XLSX.utils.book_new();
   var fecha=new Date().toLocaleDateString('es-BO');
-  // Compradores
-  var byComp={};admLotes.forEach(function(l){var k=l.comprador||'SIN COMPRADOR';if(!byComp[k])byComp[k]=[];byComp[k].push(l);});
-  var compRows=[['REMATE '+fecha],['COMPRADORES'],['N','COMPRADOR','CATEGORIA','LOTE','CANTIDAD','P/U','MONTO','COMISION','TOTAL $us','T/C','TOTAL Bs.']];
-  Object.entries(byComp).forEach(function(e){var comp=e[0],rows=e[1],n=1,stM=0,stC=0,stT=0,stCant=0;rows.forEach(function(l){var m=(l.precio||0)*(l.cantidad||0),c=m*com,t=m+c;stM+=m;stC+=c;stT+=t;stCant+=l.cantidad||0;compRows.push([n++,comp,l.categoria,l.lote,l.cantidad,l.precio||0,m,c,t,tc,t*tc]);});compRows.push(['TOTAL','','','',stCant,'',stM,stC,stT,tc,stT*tc]);});
-  // Vendedores
-  var byVend={};admLotes.forEach(function(l){var k=l.propietario||'SIN PROP';if(!byVend[k])byVend[k]=[];byVend[k].push(l);});
-  var vendRows=[['REMATE '+fecha],['VENDEDORES'],['N','VENDEDOR','CATEGORIA','LOTE','CANTIDAD','P/U','MONTO','COMISION','TOTAL $us','T/C','TOTAL Bs.']];
-  Object.entries(byVend).forEach(function(e){var vend=e[0],rows=e[1],n=1,stM=0,stC=0,stT=0,stCant=0;rows.forEach(function(l){var m=(l.precio||0)*(l.cantidad||0),c=m*com,t=m-c;stM+=m;stC+=c;stT+=t;stCant+=l.cantidad||0;vendRows.push([n++,vend,l.categoria,l.lote,l.cantidad,l.precio||0,m,c,t,tc,t*tc]);});vendRows.push(['TOTAL','','','',stCant,'',stM,stC,stT,tc,stT*tc]);});
-  // Defensas
+  var remate='REMATE AGACON - '+fecha;
+
+  // ── COMPRADORES ──
+  var byComp={};
+  admLotes.forEach(function(l){var k=l.comprador||'SIN COMPRADOR';if(!byComp[k])byComp[k]=[];byComp[k].push(l);});
+  var compRows=[
+    ['ASOCIACION DE GANADEROS DE CONCEPCION - AGACON','','','','','','','','','',''],
+    [remate,'','','','','','','','','',''],
+    ['COMPRADORES','','','','','','','','','',''],
+    ['N°','COMPRADOR','CATEGORIA','LOTE','CANTIDAD','P/U','MONTO','COMISION '+Math.round(com*100)+'%','TOTAL $US','T/C '+tc,'TOTAL Bs.']
+  ];
+  var totalRows=[];
+  Object.entries(byComp).forEach(function(e){
+    var comp=e[0],rows=e[1],n=1,stM=0,stC=0,stT=0,stCant=0;
+    rows.forEach(function(l){
+      var m=(l.precio||0)*(l.cantidad||0),c=parseFloat((m*com).toFixed(2)),t=parseFloat((m+c).toFixed(2));
+      stM+=m;stC+=c;stT+=t;stCant+=l.cantidad||0;
+      compRows.push([n++,comp,l.categoria,l.lote,l.cantidad,l.precio||0,m,c,t,tc,parseFloat((t*tc).toFixed(2))]);
+    });
+    totalRows.push(compRows.length+1);
+    compRows.push(['TOTALES','','','',stCant,'',stM,parseFloat(stC.toFixed(2)),parseFloat(stT.toFixed(2)),tc,parseFloat((stT*tc).toFixed(2))]);
+    compRows.push(['','','','','','','','','','','']);
+  });
+  // Grand total
+  var gtM=admLotes.reduce(function(a,l){return a+(l.precio||0)*(l.cantidad||0);},0);
+  var gtCant=admLotes.reduce(function(a,l){return a+(l.cantidad||0);},0);
+  totalRows.push(compRows.length+1);
+  compRows.push(['TOTAL GENERAL','','','',gtCant,'',gtM,parseFloat((gtM*com).toFixed(2)),parseFloat((gtM+gtM*com).toFixed(2)),tc,parseFloat(((gtM+gtM*com)*tc).toFixed(2))]);
+  // Bank data
+  if(bank.nombre||bank.cuenta){
+    compRows.push(['','','','','','','','','','','']);
+    compRows.push(['DATOS BANCARIOS','','','','','','','','','','']);
+    compRows.push([bank.tipo,'','','','','','','','','','']);
+    compRows.push(['CUENTA EN BOLIVIANOS N° '+bank.cuenta,'','','','','','','','','','']);
+    if(bank.titular1) compRows.push([bank.titular1+' CI. '+bank.ci1,'','','','','','','','','','']);
+    if(bank.titular2) compRows.push([bank.titular2+' CI. '+bank.ci2,'','','','','','','','','','']);
+  }
+  var wsComp=XLSX.utils.aoa_to_sheet(compRows);
+  styleSheet(wsComp, 3, totalRows, 11);
+  wsComp['!merges']=[{s:{r:0,c:0},e:{r:0,c:10}},{s:{r:1,c:0},e:{r:1,c:10}},{s:{r:2,c:0},e:{r:2,c:10}}];
+
+  // ── VENDEDORES ──
+  var byVend={};
+  admLotes.forEach(function(l){var k=l.propietario||'SIN PROP';if(!byVend[k])byVend[k]=[];byVend[k].push(l);});
+  var vendRows=[
+    ['ASOCIACION DE GANADEROS DE CONCEPCION - AGACON','','','','','','','','','',''],
+    [remate,'','','','','','','','','',''],
+    ['VENDEDORES','','','','','','','','','',''],
+    ['N°','VENDEDOR','CATEGORIA','LOTE','CANTIDAD','P/U','MONTO','COMISION '+Math.round(com*100)+'%','TOTAL A PAGAR $US','T/C '+tc,'TOTAL Bs.']
+  ];
+  var vendTotalRows=[];
+  Object.entries(byVend).forEach(function(e){
+    var vend=e[0],rows=e[1],n=1,stM=0,stC=0,stT=0,stCant=0;
+    rows.forEach(function(l){
+      var m=(l.precio||0)*(l.cantidad||0),c=parseFloat((m*com).toFixed(2)),t=parseFloat((m-c).toFixed(2));
+      stM+=m;stC+=c;stT+=t;stCant+=l.cantidad||0;
+      vendRows.push([n++,vend,l.categoria,l.lote,l.cantidad,l.precio||0,m,c,t,tc,parseFloat((t*tc).toFixed(2))]);
+    });
+    vendTotalRows.push(vendRows.length+1);
+    vendRows.push(['TOTAL','','','',stCant,'',stM,parseFloat(stC.toFixed(2)),parseFloat(stT.toFixed(2)),tc,parseFloat((stT*tc).toFixed(2))]);
+    vendRows.push(['','','','','','','','','','','']);
+  });
+  var vtM=admLotes.reduce(function(a,l){return a+(l.precio||0)*(l.cantidad||0);},0);
+  vendTotalRows.push(vendRows.length+1);
+  vendRows.push(['TOTAL GENERAL','','','',gtCant,'',vtM,parseFloat((vtM*com).toFixed(2)),parseFloat((vtM-vtM*com).toFixed(2)),tc,parseFloat(((vtM-vtM*com)*tc).toFixed(2))]);
+  if(bank.nombre||bank.cuenta){
+    vendRows.push(['','','','','','','','','','','']);
+    vendRows.push([bank.tipo,'','','','','','','','','','']);
+    vendRows.push(['CUENTA EN BOLIVIANOS N° '+bank.cuenta,'','','','','','','','','','']);
+    if(bank.titular1) vendRows.push([bank.titular1+' CI. '+bank.ci1,'','','','','','','','','','']);
+    if(bank.titular2) vendRows.push([bank.titular2+' CI. '+bank.ci2,'','','','','','','','','','']);
+  }
+  var wsVend=XLSX.utils.aoa_to_sheet(vendRows);
+  styleSheet(wsVend, 3, vendTotalRows, 11);
+  wsVend['!merges']=[{s:{r:0,c:0},e:{r:0,c:10}},{s:{r:1,c:0},e:{r:1,c:10}},{s:{r:2,c:0},e:{r:2,c:10}}];
+
+  // ── DEFENSAS ──
   var sinComp=admLotes.filter(function(l){return !l.comprador;});
-  var defRows=[['REMATE '+fecha],['DEFENSAS'],['N','PROPIETARIO','CATEGORIA','LOTE','CANTIDAD','P/U','MONTO','COM 0.5%']];
-  sinComp.forEach(function(l,i){var m=(l.precio||0)*(l.cantidad||0);defRows.push([i+1,l.propietario||'—',l.categoria,l.lote,l.cantidad,l.precio||0,m,m*0.005]);});
-  // Resumen
+  var defRows=[
+    ['ASOCIACION DE GANADEROS DE CONCEPCION - AGACON','','','','','','',''],
+    [remate,'','','','','','',''],
+    ['DEFENSAS','','','','','','',''],
+    ['N°','DEFENSA','CATEGORIA','LOTE','CANTIDAD','P/U','MONTO','COMISION 0.5%']
+  ];
+  var defTotalRows=[];
+  sinComp.forEach(function(l,i){
+    var m=(l.precio||0)*(l.cantidad||0),c=parseFloat((m*0.005).toFixed(2));
+    defRows.push([i+1,l.propietario||'—',l.categoria,l.lote,l.cantidad,l.precio||0,m,c]);
+  });
+  var dtM=sinComp.reduce(function(a,l){return a+(l.precio||0)*(l.cantidad||0);},0);
+  var dtCant=sinComp.reduce(function(a,l){return a+(l.cantidad||0);},0);
+  defTotalRows.push(defRows.length+1);
+  defRows.push(['TOTAL GENERAL','','','',dtCant,'',dtM,parseFloat((dtM*0.005).toFixed(2))]);
+  var wsDef=XLSX.utils.aoa_to_sheet(defRows);
+  styleSheet(wsDef, 3, defTotalRows, 8);
+  wsDef['!merges']=[{s:{r:0,c:0},e:{r:0,c:7}},{s:{r:1,c:0},e:{r:1,c:7}},{s:{r:2,c:0},e:{r:2,c:7}}];
+
+  // ── RESUMEN ──
   var monto=admLotes.reduce(function(a,l){return a+(l.precio||0)*(l.cantidad||0);},0);
-  var resRows=[['REMATE '+fecha],[],['INGRESOS'],['Monto total',monto],['Comision compradores',monto*com],['Comision vendedores',monto*com],['TOTAL COMISIONES $us',monto*com*2],['TOTAL COMISIONES Bs.',monto*com*2*tc],[],['Lotes vendidos',admLotes.length],['Sin comprador',sinComp.length]];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(compRows),'COMPRADORES');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(vendRows),'VENDEDORES');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(defRows),'DEFENSAS');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(resRows),'RESUMEN');
+  var comTotal=monto*com*2;
+  var resRows=[
+    ['ASOCIACION DE GANADEROS DE CONCEPCION - AGACON',''],
+    [remate,''],
+    ['RESUMEN INGRESOS',''],
+    ['DETALLE','TOTAL $US'],
+    ['Monto total operado',monto],
+    ['Comision compradores ('+Math.round(com*100)+'%)',parseFloat((monto*com).toFixed(2))],
+    ['Comision vendedores ('+Math.round(com*100)+'%)',parseFloat((monto*com).toFixed(2))],
+    ['Defensas (0.5%)',parseFloat((dtM*0.005).toFixed(2))],
+    ['TOTAL COMISIONES $US',parseFloat(comTotal.toFixed(2))],
+    ['TOTAL COMISIONES Bs.',parseFloat((comTotal*tc).toFixed(2))],
+    ['',''],
+    ['ESTADISTICAS',''],
+    ['Lotes vendidos',admLotes.length],
+    ['Total cabezas',gtCant],
+    ['Sin comprador',sinComp.length],
+    ['Tipo de cambio','Bs. '+tc+' / $US'],
+  ];
+  if(bank.nombre||bank.cuenta){
+    resRows.push(['','']);
+    resRows.push(['DATOS BANCARIOS','']);
+    resRows.push([bank.tipo,'']);
+    resRows.push(['CUENTA N° '+bank.cuenta,'']);
+    if(bank.titular1) resRows.push([bank.titular1,'CI. '+bank.ci1]);
+    if(bank.titular2) resRows.push([bank.titular2,'CI. '+bank.ci2]);
+  }
+  var wsRes=XLSX.utils.aoa_to_sheet(resRows);
+  styleSheet(wsRes, 3, [8,9], 2);
+  wsRes['!merges']=[{s:{r:0,c:0},e:{r:0,c:1}},{s:{r:1,c:0},e:{r:1,c:1}},{s:{r:2,c:0},e:{r:2,c:1}}];
+  wsRes['!cols']=[{wch:35},{wch:20}];
+
+  XLSX.utils.book_append_sheet(wb,wsComp,'COMPRADORES');
+  XLSX.utils.book_append_sheet(wb,wsVend,'VENDEDORES');
+  XLSX.utils.book_append_sheet(wb,wsDef,'DEFENSAS');
+  XLSX.utils.book_append_sheet(wb,wsRes,'RESUMEN');
   XLSX.writeFile(wb,'AGACON_REMATE_'+fecha.replace(/\//g,'-')+'.xlsx');
-  toast('Excel exportado con 4 hojas');
+  toast('Excel exportado con formato y 4 hojas');
 }
 
 function admExportCSV(tipo) {
