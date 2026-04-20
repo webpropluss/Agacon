@@ -1718,24 +1718,46 @@ function admExportExcel() {
   var comPct = parseFloat(document.getElementById('adm-com').value)||3;
   var bank   = getBankData();
   var fecha  = new Date().toLocaleDateString('es-BO',{day:'2-digit',month:'2-digit',year:'numeric'});
-  var remNum = document.getElementById('adm-remate-sel').options[document.getElementById('adm-remate-sel').selectedIndex]
-               .text.match(/\d{2}\/\d{2}\/\d{4}/)?.[0] || fecha;
 
-  var wb = {SheetNames:[], Sheets:{}};
-
-  var wsComp = buildCompradores(admLotes, tc, comPct, fecha, remNum, bank);
-  var wsVend = buildVendedores(admLotes, tc, comPct, fecha, remNum, bank);
-  var wsDef  = buildDefensas(admLotes, tc, fecha, remNum);
-  var wsRes  = buildResumen(admLotes, tc, comPct, fecha, remNum);
-
-  wb.SheetNames.push('COMPRADORES'); wb.Sheets['COMPRADORES'] = wsComp;
-  wb.SheetNames.push('VENDEDORES');  wb.Sheets['VENDEDORES']  = wsVend;
-  wb.SheetNames.push('DEFENSAS');    wb.Sheets['DEFENSAS']    = wsDef;
-  wb.SheetNames.push('RESUMEN');     wb.Sheets['RESUMEN']     = wsRes;
-
-  XLSX.writeFile(wb, 'AGACON_REMATE_'+fecha.replace(/\//g,'-')+'.xlsx', {cellStyles:true, bookType:'xlsx'});
-  toast('Excel exportado con formato completo ✓');
+  // Store data globally for Pyodide to read
+  window._excelData = {lotes:admLotes, tc:tc, com_pct:comPct, fecha:fecha, remate_num:'01', bank:bank};
+  toast('Generando Excel formateado...');
+  generateExcelPython();
 }
+
+var _pyodide = null;
+
+async function generateExcelPython() {
+  try {
+    if (!_pyodide) {
+      toast('Cargando Python (primera vez ~20s)...');
+      _pyodide = await loadPyodide();
+      await _pyodide.loadPackage('openpyxl');
+    }
+
+    // Pass data to Python via pyodide globals
+    _pyodide.globals.set('_js_data', JSON.stringify(window._excelData));
+
+    var b64 = await _pyodide.runPythonAsync(_EXCEL_PY_CODE);
+
+    var bin = atob(b64);
+    var arr = new Uint8Array(bin.length);
+    for (var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    var blob = new Blob([arr],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href   = url;
+    var fecha = window._excelData.fecha.replace(/\//g,'-');
+    a.download = 'AGACON_REMATE_'+fecha+'.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Excel exportado con formato ✓');
+  } catch(err) {
+    console.error(err);
+    toast('Error: '+err.message, true);
+  }
+}
+
 
 function admExportCSV(tipo) {
   var tc=parseFloat(document.getElementById('adm-tc').value)||6.96;
@@ -1765,6 +1787,8 @@ function toast(msg,err){
 }
 
 // Public screen opened via showPublic() button in operator
+
+var _EXCEL_PY_CODE = '\nimport json, base64, io\nfrom openpyxl import Workbook\nfrom openpyxl.styles import Font, PatternFill, Alignment, Border, Side\n\nd = json.loads(_js_data)\nlotes = d[\'lotes\']\ntc = d[\'tc\']\ncp = d[\'com_pct\']\nfecha = d[\'fecha\']\nrn = d[\'remate_num\']\nbk = d[\'bank\']\n\nFN=\'Calibri\'; YW=\'FFFFCC\'; TB=\'D9D9D9\'; HB=\'D9E1F2\'; GB=\'BDD7EE\'\n\ndef T():\n    s=Side(style=\'thin\',color=\'AAAAAA\')\n    return Border(left=s,right=s,top=s,bottom=s)\n\ndef sc(ws,r,c,v,bold=False,fill=None,align=\'left\',sz=10,col=\'000000\',nf=None,wrap=False):\n    cell=ws.cell(row=r,column=c,value=v)\n    cell.font=Font(name=FN,bold=bold,size=sz,color=col)\n    cell.alignment=Alignment(horizontal=align,vertical=\'center\',wrap_text=wrap)\n    cell.border=T()\n    if fill: cell.fill=PatternFill(\'solid\',fgColor=fill)\n    if nf:   cell.number_format=nf\n    return cell\n\ndef W(ws):\n    for i,w in enumerate([4,30,12,11,11,8.5,14.8,15,14.5,9.3,16],1):\n        ws.column_dimensions[chr(64+i)].width=w\n\ndef TTL(ws,sec):\n    yr=fecha.split(\'/\')[-1] if \'/\' in fecha else \'2026\'\n    for r,v in [(3,\'REMATES/\'+yr),(4,\'REMATE N\\u00b0 \'+str(rn)),(5,\'FECHA: \'+fecha),(6,sec)]:\n        c=ws.cell(row=r,column=1,value=v); c.font=Font(name=FN,bold=True,size=11 if r<6 else 12)\n    ws.row_dimensions[7].height=30\n\ndef HDR(ws,cols):\n    for i,h in enumerate(cols,1): sc(ws,7,i,h,bold=True,fill=HB,align=\'center\',wrap=True)\n\ndef DR(ws,row,n,nm,l,sel=False):\n    sc(ws,row,1,n,align=\'center\'); sc(ws,row,2,nm); sc(ws,row,3,l.get(\'categoria\',\'\'))\n    sc(ws,row,4,l.get(\'lote\',0),align=\'center\'); sc(ws,row,5,l.get(\'cantidad\',0),align=\'center\',nf=\'#,##0\')\n    sc(ws,row,6,l.get(\'precio\',0),align=\'right\',nf=\'#,##0\')\n    sc(ws,row,7,f\'=E{row}*F{row}\',align=\'right\',nf=\'#,##0.00\')\n    sc(ws,row,8,f\'=G{row}*{cp}%\',align=\'right\',nf=\'#,##0.00\')\n    op=\'-\' if sel else \'+\'\n    sc(ws,row,9,f\'=G{row}{op}H{row}\',bold=True,fill=YW,align=\'right\',nf=\'#,##0.00\')\n    sc(ws,row,10,tc,align=\'center\',nf=\'0.00\')\n    sc(ws,row,11,f\'=I{row}*J{row}\',bold=True,align=\'right\',nf=\'#,##0.00\')\n\ndef ST(ws,row,s,e,lbl=\'TOTALES\'):\n    sc(ws,row,1,lbl,bold=True,fill=TB)\n    for c in range(2,12):\n        cell=ws.cell(row=row,column=c); cell.border=T()\n        cell.font=Font(name=FN,bold=True,size=10); cell.fill=PatternFill(\'solid\',fgColor=TB)\n        cell.alignment=Alignment(horizontal=\'right\',vertical=\'center\')\n    ws.cell(row=row,column=5).value=f\'=SUM(E{s}:E{e})\'; ws.cell(row=row,column=5).number_format=\'#,##0\'\n    ws.cell(row=row,column=7).value=f\'=SUM(G{s}:G{e})\'; ws.cell(row=row,column=7).number_format=\'#,##0.00\'\n    ws.cell(row=row,column=8).value=f\'=SUM(H{s}:H{e})\'; ws.cell(row=row,column=8).number_format=\'#,##0.00\'\n    ws.cell(row=row,column=9).value=f\'=SUM(I{s}:I{e})\'; ws.cell(row=row,column=9).number_format=\'#,##0.00\'\n    ws.cell(row=row,column=9).fill=PatternFill(\'solid\',fgColor=YW)\n    ws.cell(row=row,column=11).value=f\'=SUM(K{s}:K{e})\'; ws.cell(row=row,column=11).number_format=\'#,##0.00\'\n\ndef GT(ws,row,refs):\n    sc(ws,row,1,\'TOTAL GENERAL\',bold=True,fill=GB,sz=11)\n    for c in range(2,12):\n        cell=ws.cell(row=row,column=c); cell.border=T()\n        cell.font=Font(name=FN,bold=True,size=11); cell.fill=PatternFill(\'solid\',fgColor=GB)\n        cell.alignment=Alignment(horizontal=\'right\',vertical=\'center\')\n    def S(col): return \'+\'.join([f\'{col}{r}\' for r in refs])\n    ws.cell(row=row,column=5).value=f\'={S("E")}\'; ws.cell(row=row,column=5).number_format=\'#,##0\'\n    ws.cell(row=row,column=7).value=f\'={S("G")}\'; ws.cell(row=row,column=7).number_format=\'#,##0.00\'\n    ws.cell(row=row,column=8).value=f\'={S("H")}\'; ws.cell(row=row,column=8).number_format=\'#,##0.00\'\n    ws.cell(row=row,column=9).value=f\'={S("I")}\'; ws.cell(row=row,column=9).number_format=\'#,##0.00\'\n    ws.cell(row=row,column=9).fill=PatternFill(\'solid\',fgColor=YW)\n    ws.cell(row=row,column=11).value=f\'={S("K")}\'; ws.cell(row=row,column=11).number_format=\'#,##0.00\'\n\ndef BK(ws,row):\n    if not any([bk.get(\'tipo\'),bk.get(\'cuenta\'),bk.get(\'titular1\')]): return\n    row+=2\n    for txt,col in [(bk.get(\'tipo\',\'\'),\'000000\'),(\'CUENTA EN BOLIVIANOS N\\u00b0 \'+bk.get(\'cuenta\',\'\'),\'C00000\'),(bk.get(\'titular1\',\'\')+\' CI. \'+bk.get(\'ci1\',\'\'),\'000000\'),(bk.get(\'titular2\',\'\')+\' CI. \'+bk.get(\'ci2\',\'\'),\'000000\')]:\n        if txt and txt!=\'CI.\':\n            c=ws.cell(row=row,column=1,value=txt); c.font=Font(name=FN,bold=True,size=11,color=col); row+=1\n\ndef mksheet(wb,sec,by,sel=False,lbl=\'TOTALES\',hdrcols=None):\n    ws=wb.create_sheet(sec); W(ws); TTL(ws,sec if sec!=\'VENDEDOR\' else \'VENDEDOR\'); HDR(ws,hdrcols)\n    row=8; tots=[]\n    for k,rows in by.items():\n        s=row\n        for n,l in enumerate(rows,1): DR(ws,row,n,k,l,sel=sel); row+=1\n        tots.append(row); ST(ws,row,s,row-1,lbl); row+=1\n    GT(ws,row,tots); BK(ws,row+1); ws.freeze_panes=\'A8\'; return ws\n\nby_c={}; [by_c.setdefault(l.get(\'comprador\') or \'SIN COMPRADOR\',[]).append(l) for l in lotes]\nby_v={}; [by_v.setdefault(l.get(\'propietario\') or \'SIN PROPIETARIO\',[]).append(l) for l in lotes]\n\nwb=Workbook(); wb.remove(wb.active)\nmksheet(wb,\'COMPRADORES\',by_c,sel=False,lbl=\'TOTALES\',hdrcols=[f\'N\\u00b0\',\'COMPRADOR\',\'CATEGORIA\',\'LOTE\',\'CANTIDAD\',\'P/U\',\'MONTO\',f\'COMISION {cp}%\',\'TOTAL MONTO EN $US\',f\'T/C {tc}\',\'TOTAL MONTO EN Bs.\'])\nmksheet(wb,\'VENDEDORES\',by_v,sel=True,lbl=\'TOTAL\',hdrcols=[f\'N\\u00b0\',\'VENDEDORES\',\'CATEGORIA\',\'LOTE\',\'CANTIDAD\',\'P/U\',\'MONTO\',f\'COMISION {cp}%\',\'TOTAL A PAGAR $us\',f\'T/C {tc}\',\'TOTAL A PAGAR Bs.\'])\n\n# Defensas sheet\nsinC=[l for l in lotes if not l.get(\'comprador\')]\nby_d={}; [by_d.setdefault(l.get(\'propietario\') or \'SIN PROPIETARIO\',[]).append(l) for l in sinC]\nws3=wb.create_sheet(\'DEFENSAS\'); W(ws3); TTL(ws3,\'DEFENSAS\')\nHDR(ws3,[f\'N\\u00b0\',\'DEFENSAS\',\'CATEGORIA\',\'LOTE\',\'CANTIDAD\',\'P/U\',\'MONTO\',\'COMISION 0.5% - 1%\',\'TOTAL A PAGAR $\',f\'T/C {tc}\',\'TOTAL A PAGAR Bs.\'])\nrow=8; tots3=[]; gn=1\nfor k,rows in by_d.items():\n    s=row\n    for l in rows:\n        sc(ws3,row,1,gn,align=\'center\'); sc(ws3,row,2,k); sc(ws3,row,3,l.get(\'categoria\',\'\'))\n        sc(ws3,row,4,l.get(\'lote\',0),align=\'center\'); sc(ws3,row,5,l.get(\'cantidad\',0),align=\'center\',nf=\'#,##0\')\n        sc(ws3,row,6,l.get(\'precio\',0),align=\'right\',nf=\'#,##0\')\n        sc(ws3,row,7,f\'=E{row}*F{row}\',align=\'right\',nf=\'#,##0.00\')\n        sc(ws3,row,8,f\'=G{row}*0.5%\',align=\'right\',nf=\'#,##0.00\')\n        sc(ws3,row,9,f\'=H{row}\',bold=True,fill=YW,align=\'right\',nf=\'#,##0.00\')\n        sc(ws3,row,10,tc,align=\'center\',nf=\'0.00\')\n        sc(ws3,row,11,f\'=I{row}*J{row}\',bold=True,align=\'right\',nf=\'#,##0.00\')\n        row+=1; gn+=1\n    tots3.append(row); ST(ws3,row,s,row-1,\'TOTAL\'); row+=1\nif tots3: GT(ws3,row,tots3)\nws3.freeze_panes=\'A8\'\n\n# Resumen\nws4=wb.create_sheet(\'RESUMEN\')\nws4.column_dimensions[\'A\'].width=38; ws4.column_dimensions[\'B\'].width=20; ws4.column_dimensions[\'C\'].width=18\nws4[\'A1\']=\'ASOCIACION DE GANADEROS DE CONCEPCION - AGACON\'; ws4[\'A1\'].font=Font(name=FN,bold=True,size=14)\nws4[\'A2\']=f\'REMATE N\\u00b0 {rn} - FECHA: {fecha}\'; ws4[\'A2\'].font=Font(name=FN,bold=True,size=12)\nmonto=sum(l.get(\'precio\',0)*l.get(\'cantidad\',0) for l in lotes)\ndtM=sum(l.get(\'precio\',0)*l.get(\'cantidad\',0) for l in sinC)\ncab=sum(l.get(\'cantidad\',0) for l in lotes)\ncom=monto*cp/100*2+dtM*0.005\ndef RH(r,t):\n    for c in range(1,4):\n        cell=ws4.cell(row=r,column=c); cell.fill=PatternFill(\'solid\',fgColor=\'1F4E79\')\n        cell.font=Font(name=FN,bold=True,size=11,color=\'FFFFFF\'); cell.border=T()\n    ws4.cell(row=r,column=1).value=t\n    for c,v in [(2,\'TOTAL $us\'),(3,\'TOTAL Bs.\')]:\n        ws4.cell(row=r,column=c).value=v; ws4.cell(row=r,column=c).alignment=Alignment(horizontal=\'right\',vertical=\'center\')\ndef RI(r,lbl,usd,bold=False):\n    bg=YW if bold else None\n    sc(ws4,r,1,lbl,bold=bold,fill=bg); sc(ws4,r,2,round(usd,2),bold=bold,fill=bg,align=\'right\',nf=\'#,##0.00\')\n    sc(ws4,r,3,round(usd*tc,2),bold=bold,fill=bg,align=\'right\',nf=\'#,##0.00\')\nRH(4,\'DETALLE DE INGRESOS\')\nRI(5,f\'COMISION VENDEDORES {cp}%\',monto*cp/100); RI(6,f\'COMISION COMPRADORES {cp}%\',monto*cp/100)\nRI(7,\'COMISION DEFENSAS 0.5%\',dtM*0.005); RI(8,\'TOTAL INGRESOS\',com,bold=True)\nRH(10,\'ESTADISTICAS\')\nRI(11,\'Monto total operado $us\',monto,bold=True)\nsc(ws4,12,1,\'Total lotes\'); sc(ws4,12,2,len(lotes),align=\'right\')\nsc(ws4,13,1,\'Total cabezas\'); sc(ws4,13,2,cab,align=\'right\')\nsc(ws4,14,1,\'Sin comprador (defensas)\'); sc(ws4,14,2,len(sinC),align=\'right\')\n\nbuf=io.BytesIO(); wb.save(buf); buf.seek(0)\nbase64.b64encode(buf.read()).decode()\n';
 </script>
 </body>
 </html>
