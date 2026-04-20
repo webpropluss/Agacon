@@ -1107,7 +1107,16 @@ function renderPublic() {
 
 function showPublic() {
   renderPublic();
-  goTo('public');
+  // Open public screen in a NEW window so it can be moved to the TV
+  var pubUrl = window.location.href.split('?')[0] + '?pantalla=publica';
+  var w = window.open(pubUrl, 'agacon_public', 'width=1280,height=720');
+  if (!w) {
+    // Popup blocked - fallback to same window
+    toast('Permite ventanas emergentes en el navegador, o usa F11 aqui');
+    goTo('public');
+  } else {
+    toast('Arrastrá la nueva ventana al TV y presioná F11');
+  }
 }
 
 // ── Buyer modal ──
@@ -2183,6 +2192,37 @@ function toast(msg,err){
   clearTimeout(toastTimer);
   toastTimer=setTimeout(function(){el.classList.remove('show');},3000);
 }
+
+// Auto-open public screen if URL param present
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('pantalla') === 'publica') {
+    // This is the public window - go straight to public and poll localStorage
+    document.addEventListener('DOMContentLoaded', function() {
+      // Hide menu, show public directly
+      document.getElementById('menu-screen').style.display = 'none';
+      document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+      var el = document.getElementById('screen-public');
+      if (el) el.classList.add('active');
+      // Start polling localStorage for operator updates
+      setInterval(function() {
+        try {
+          var raw = localStorage.getItem('agacon_pub_state');
+          if (!raw) return;
+          var d = JSON.parse(raw);
+          setFlip('pf-lote',  String(d.lote  || '—'));
+          setFlip('pf-cant',  String(d.cant  || '—'));
+          setFlip('pf-price', String(d.precio || '0'));
+          setText('pf-cat',  d.categoria || '—');
+          setText('pf-raza', d.raza || '—');
+          setText('pf-edad', d.edad || '—');
+          var pesoEl = document.getElementById('pf-peso');
+          if (pesoEl) pesoEl.textContent = d.peso ? String(d.peso) : '—';
+        } catch(e) {}
+      }, 300);
+    });
+  }
+})();
 
 // Public screen opened via showPublic() button in operator
 ;
