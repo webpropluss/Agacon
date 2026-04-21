@@ -610,6 +610,22 @@ tr.pend{border-left:3px solid var(--gold)}
       </div>
     </div>
 
+    <!-- Socios import -->
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;display:flex;flex-direction:column;gap:.5rem;flex-shrink:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+        <div style="font-size:.62rem;letter-spacing:2px;color:#1a9ad6;text-transform:uppercase;font-weight:700;">📋 Lista de Socios (para cálculo de comisión defensas)</div>
+        <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+          <span id="socios-count" style="font-size:.72rem;color:var(--muted);">No cargada</span>
+          <label style="cursor:pointer;">
+            <input type="file" id="socios-file" accept=".xlsx,.xls" style="display:none" onchange="sociosImport(this)">
+            <span class="tbtn" style="font-size:.62rem;padding:.25rem .65rem;">📂 Importar Excel Socios</span>
+          </label>
+          <button class="tbtn" id="socios-reload-btn" onclick="sociosLoadFromFirebase()" style="font-size:.62rem;padding:.25rem .65rem;display:none;">↻ Recargar</button>
+        </div>
+      </div>
+      <div id="socios-preview" style="font-size:.72rem;color:var(--muted);display:none;"></div>
+    </div>
+
     <div class="export-bar">
       <h3>Exportar</h3>
       <button class="btn btn-gold" onclick="admExportExcel()">⬇ Excel completo (4 hojas)</button>
@@ -774,6 +790,7 @@ function goTo(screen) {
     if (screen === 'admin') {
       admLoadRematesList();
       bankLoadFromFirebase();
+      sociosLoadFromFirebase();
     }
     if (screen === 'public') {
       renderPublic();
@@ -1340,12 +1357,30 @@ function compOpenModal(lotKey) {
 
 function compSaveComprador() {
   var nombre=document.getElementById('mc-nombre').value.trim();
-  var ci=document.getElementById('mc-ci').value.trim();
-  var tel=document.getElementById('mc-tel').value.trim();
+  var ci    =document.getElementById('mc-ci').value.trim();
+  var tel   =document.getElementById('mc-tel').value.trim();
   if(!nombre){toast('Ingresa el nombre',true);return;}
-  db.ref('remates/'+compRemateId+'/lotes/'+compCurrentLotKey).update({comprador:nombre,compradorCI:ci,compradorTel:tel});
+
+  // Check defensa: buyer matches seller
+  var lot = compLotes.find(function(l){ return l._key===compCurrentLotKey; });
+  var testLot = lot ? Object.assign({},lot,{comprador:nombre,compradorCI:ci}) : null;
+  var esDefensa = testLot ? isDefensa(testLot) : false;
+  var comPct = esDefensa ? getDefensaComPct(lot) : null;
+
+  var update = {comprador:nombre, compradorCI:ci, compradorTel:tel,
+    esDefensa: esDefensa, defensaCom: esDefensa ? comPct : null};
+
+  db.ref('remates/'+compRemateId+'/lotes/'+compCurrentLotKey).update(update);
   closeModal('m-comp-buyer');
-  toast('Comprador asignado');
+
+  if (esDefensa) {
+    var socioTxt = sociosList.length
+      ? (isSocio(lot.propietario, lot.propietarioCi) ? ' — SOCIO (0.5%)' : ' — NO SOCIO (1%)')
+      : ' (0.5% default)';
+    toast('🛡 DEFENSA detectada' + socioTxt);
+  } else {
+    toast('Comprador asignado ✓');
+  }
 }
 
 // ════════════════════════════════════════
@@ -1437,7 +1472,8 @@ function admRenderVendedores(tc,com) {
 }
 
 function admRenderDefensas() {
-  var sinComp=admLotes.filter(function(l){return !l.comprador;});
+  // Defensas = lots marked as esDefensa OR without comprador
+  var sinComp=admLotes.filter(function(l){return l.esDefensa || !l.comprador;});
   var tbody=document.getElementById('adm-tbody-def');tbody.innerHTML='';
   if(!sinComp.length){var tr=document.createElement('tr');var td=document.createElement('td');td.colSpan=8;td.style.cssText='text-align:center;color:#888;padding:1.5rem';td.textContent='No hay defensas';tr.appendChild(td);tbody.appendChild(tr);return;}
   sinComp.forEach(function(l,i){
@@ -2115,6 +2151,145 @@ async function admExportExcel() {
   }
 }
 
+
+// ── SOCIOS management ──
+var sociosList = []; // [{nombre, ci, ciNum}]
+
+function normCI(ci) {
+  // Extract only digits from CI for comparison
+  if (!ci) return '';
+  return String(ci).replace(/[^0-9]/g, '').trim();
+}
+
+function normName(name) {
+  if (!name) return '';
+  return String(name).toUpperCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove accents
+    .replace(/[^A-Z0-9\s]/g, '')
+    .replace(/\s+/g, ' ').trim();
+}
+
+function isSocio(nombre, ci) {
+  if (!sociosList.length) return null; // list not loaded
+  var normN = normName(nombre);
+  var normC = normCI(ci);
+  for (var i = 0; i < sociosList.length; i++) {
+    var s = sociosList[i];
+    // Match by CI number (digits only, at least 6 digits match)
+    if (normC && normC.length >= 6 && s.ciNum && s.ciNum.includes(normC)) return true;
+    if (normC && normC.length >= 6 && normC.includes(s.ciNum) && s.ciNum.length >= 6) return true;
+    // Match by name - check if first apellido and first nombre match
+    if (normN && s.normNombre) {
+      var partsS = s.normNombre.split(' ');
+      var partsN = normN.split(' ');
+      // At least 2 words match
+      var matches = partsS.filter(function(p){ return p.length>2 && partsN.indexOf(p)>=0; });
+      if (matches.length >= 2) return true;
+    }
+  }
+  return false;
+}
+
+function sociosImport(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var wb = XLSX.read(e.target.result, {type:'array'});
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+    // Find header row
+    var headerRow = -1;
+    for (var i=0; i<rows.length; i++) {
+      var r = rows[i];
+      if (r && r.some(function(c){ return c && String(c).toUpperCase().includes('CARNET'); })) {
+        headerRow = i; break;
+      }
+    }
+    if (headerRow < 0) { toast('No se encontró columna CARNET en el Excel', true); return; }
+    var H = rows[headerRow].map(function(h){ return h ? String(h).toUpperCase() : ''; });
+    var colNombre = H.findIndex(function(h){ return h.includes('NOMBRE') || h.includes('APELLIDO'); });
+    var colCI     = H.findIndex(function(h){ return h.includes('CARNET') || h.includes('CI'); });
+    if (colNombre < 0 || colCI < 0) { toast('Columnas NOMBRE/CARNET no encontradas', true); return; }
+
+    var parsed = [];
+    for (var i=headerRow+1; i<rows.length; i++) {
+      var r = rows[i];
+      if (!r) continue;
+      var nombre = r[colNombre];
+      var ci     = r[colCI];
+      if (!nombre && !ci) continue;
+      parsed.push({
+        nombre:    String(nombre||'').trim(),
+        ci:        String(ci||'').trim(),
+        normNombre: normName(String(nombre||'')),
+        ciNum:     normCI(String(ci||''))
+      });
+    }
+
+    sociosList = parsed;
+    // Save to Firebase
+    db.ref('config/socios').set(parsed, function(err) {
+      if (err) toast('Error guardando socios: '+err.message, true);
+      else {
+        sociosUpdateUI(parsed.length);
+        toast('Lista de socios guardada: ' + parsed.length + ' socios ✓');
+      }
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function sociosLoadFromFirebase() {
+  db.ref('config/socios').once('value', function(snap) {
+    var data = snap.val();
+    if (!data || !data.length) {
+      document.getElementById('socios-count').textContent = 'No cargada';
+      return;
+    }
+    sociosList = data;
+    sociosUpdateUI(data.length);
+  });
+}
+
+function sociosUpdateUI(count) {
+  document.getElementById('socios-count').textContent = count + ' socios cargados';
+  document.getElementById('socios-count').style.color = 'var(--green)';
+  document.getElementById('socios-reload-btn').style.display = 'inline';
+  var prev = document.getElementById('socios-preview');
+  prev.style.display = 'block';
+  prev.textContent = 'Primeros 3: ' + sociosList.slice(0,3).map(function(s){ return s.nombre+' ('+s.ci+')'; }).join(' | ');
+}
+
+// ── DEFENSA detection ──
+function isDefensa(lot) {
+  // A lot is a defensa if comprador name or CI matches the propietario
+  if (!lot.comprador) return false;
+  var propNorm = normName(lot.propietario || '');
+  var compNorm = normName(lot.comprador || '');
+  var propCI   = normCI(lot.propietarioCi || '');
+  var compCI   = normCI(lot.compradorCI || '');
+
+  // CI match (digits only, >= 6 digits)
+  if (propCI && compCI && propCI.length >= 6 && compCI.length >= 6) {
+    if (propCI === compCI || propCI.includes(compCI) || compCI.includes(propCI)) return true;
+  }
+  // Name similarity: at least 2 words in common
+  if (propNorm && compNorm) {
+    var partsP = propNorm.split(' ').filter(function(p){ return p.length > 2; });
+    var partsC = compNorm.split(' ').filter(function(p){ return p.length > 2; });
+    var matches = partsP.filter(function(p){ return partsC.indexOf(p) >= 0; });
+    if (matches.length >= 2) return true;
+  }
+  return false;
+}
+
+function getDefensaComPct(lot) {
+  // Returns 0.5 if socio, 1 if not
+  if (!sociosList.length) return 0.5; // default if list not loaded
+  var esSocio = isSocio(lot.propietario, lot.propietarioCi);
+  return esSocio ? 0.5 : 1;
+}
 
 // ── Bank data Firebase persistence ──
 function bankLoadFromFirebase() {
