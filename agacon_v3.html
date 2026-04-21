@@ -2596,9 +2596,7 @@ function confirmDeleteRemate() {
   if (!id) { toast('Seleccioná un remate', true); return; }
 
   // Double confirm
-  if (!confirm('¿Estás seguro? Se eliminará permanentemente:
-
-' + nombre)) return;
+  if (!confirm('¿Estas seguro? Se eliminara permanentemente: ' + nombre)) return;
 
   db.ref('remates/'+id).remove(function(err) {
     if (err) {
