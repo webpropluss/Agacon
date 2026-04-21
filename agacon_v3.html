@@ -1885,7 +1885,7 @@ async function admExportExcel() {
   var fecha  = new Date().toLocaleDateString('es-BO',{day:'2-digit',month:'2-digit',year:'numeric'});
   var selEl  = document.getElementById('adm-remate-sel');
   var selTxt = selEl.options[selEl.selectedIndex] ? selEl.options[selEl.selectedIndex].text : '';
-  var remNum = selTxt.replace(/\s*\([^)]+\)$/, '').trim() || ('Remate '+fecha);
+  var remNum = selTxt.replace(/ *[(][^)]+[)]$/, '').trim() || ('Remate '+fecha);
 
   toast('Generando Excel...');
 
@@ -2173,7 +2173,7 @@ async function admExportExcel() {
     var blob = new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement('a');
-    a.href   = url; a.download='AGACON_REMATE_'+fecha.replace(/\//g,'-')+'.xlsx';
+    a.href   = url; a.download='AGACON_REMATE_'+fecha.split('/').join('-')+'.xlsx';
     a.click(); URL.revokeObjectURL(url);
     toast('Excel exportado con formato completo ✓');
 
@@ -2196,9 +2196,9 @@ function normCI(ci) {
 function normName(name) {
   if (!name) return '';
   return String(name).toUpperCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove accents
-    .replace(/[^A-Z0-9\s]/g, '')
-    .replace(/\s+/g, ' ').trim();
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9 ]/g, '')
+    .replace(/ +/g, ' ').trim();
 }
 
 function isSocio(nombre, ci) {
@@ -2513,7 +2513,7 @@ async function admExportSingle() {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href=url;
-    a.download='AGACON_'+comprador.replace(/[^A-Z0-9]/g,'_').slice(0,20)+'_'+fecha.replace(/\//g,'-')+'.xlsx';
+    a.download='AGACON_'+comprador.replace(/[^A-Z0-9]/g,'_').slice(0,20)+'_'+fecha.replace(/[/]/g,'-')+'.xlsx';
     a.click(); URL.revokeObjectURL(url);
     toast('Comprobante exportado para ' + comprador + ' ✓');
   } catch(err) {
