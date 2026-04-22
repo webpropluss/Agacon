@@ -269,9 +269,7 @@ tr.pend{border-left:3px solid var(--gold)}
     <span style="font-size:.68rem;color:var(--muted)" id="op-date"></span>
     <span style="font-size:.72rem;color:var(--muted)" id="op-prog"></span>
     <button class="tbtn" onclick="showPublic()">🖥 Público</button>
-    <button class="tbtn" onclick="openModal('m-buyer')">👤 Comprador</button>
     <button class="tbtn gold" onclick="openAddLotModal()">➕ Lote</button>
-    <button class="tbtn" onclick="openModal('m-export')">📊 Exportar</button>
     <button class="back-btn" onclick="goTo('menu')">← Menú</button>
   </div>
 
@@ -630,8 +628,6 @@ tr.pend{border-left:3px solid var(--gold)}
     <div class="export-bar">
       <h3>Exportar</h3>
       <button class="btn btn-gold" onclick="admExportExcel()">⬇ Excel completo (4 hojas)</button>
-      <button class="btn btn-blue" onclick="admExportCSV('compradores')">⬇ CSV Compradores</button>
-      <button class="btn btn-blue" onclick="admExportCSV('vendedores')">⬇ CSV Vendedores</button>
     </div>
     <!-- Filter by comprador -->
     <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;flex-shrink:0;">
