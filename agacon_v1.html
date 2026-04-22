@@ -848,18 +848,16 @@ function goTo(screen) {
 var lots = [], cur = 0, remateId = null;
 
 var DEMO = [
-  {orden:1,lote:1,propietario:'DIEGO FERNANDEZ',estancia:'LA INDOMABLE',cantidad:8,categoria:'VAQUILLAS',raza:'NELORE',edad:'11 MESES',obs:''},
-  {orden:2,lote:2,propietario:'RUBEN RUIZ',estancia:'LOS ARBOLES',cantidad:1,categoria:'VAQUILLAS',raza:'NELORE',edad:'24 MESES',obs:''},
-  {orden:3,lote:3,propietario:'RICARDO DURAN',estancia:'LA ESPERANZA',cantidad:2,categoria:'VACA',raza:'MESTIZA',edad:'36 MESES',obs:''},
-  {orden:4,lote:16,propietario:'MARIO CALVIMONTES',estancia:'LAS MARIAS',cantidad:27,categoria:'VAQUILLAS',raza:'NELORE',edad:'13 MESES',obs:''},
-  {orden:5,lote:20,propietario:'DIEGO RUIZ',estancia:'EL SOCORRO',cantidad:6,categoria:'TORILLOS',raza:'ANELORADO',edad:'10 MESES',obs:''},
-  {orden:6,lote:22,propietario:'RICARDO FLORES',estancia:'GUAPORE',cantidad:20,categoria:'TORILLOS',raza:'NELORE',edad:'10 MESES',obs:''},
-  {orden:7,lote:25,propietario:'JOSE LEDESMA',estancia:'DONA ZENOVIA',cantidad:15,categoria:'TORILLOS',raza:'NELORE',edad:'11 MESES',obs:''},
-  {orden:8,lote:29,propietario:'DARIO PAZ',estancia:'SANJON BLANCO',cantidad:20,categoria:'TORILLOS',raza:'NELORE',edad:'24 MESES',obs:''},
-  {orden:9,lote:50,propietario:'ALVARO GUZMAN',estancia:'EL JARAL',cantidad:1,categoria:'TORO',raza:'SENEPOL',edad:'36 MESES',obs:'REPRODUCTOR'},
-  {orden:10,lote:57,propietario:'JOHAN WIEBE',estancia:'CARMEMA',cantidad:7,categoria:'TOROS',raza:'NELORE',edad:'36 MESES',obs:''},
-  {orden:11,lote:62,propietario:'ALBERTO MOSCOSO',estancia:'CAMPO NUEVO',cantidad:1,categoria:'VACA',raza:'NELORE',edad:'36 MESES',obs:'CON CRIA'},
-  {orden:12,lote:64,propietario:'ENRIQUE CASTEDO',estancia:'SAN LORENCITO',cantidad:3,categoria:'VACAS',raza:'NELORE',edad:'36 MESES',obs:'CON CRIA'},
+  {orden:1,lote:3,propietario:'JEAN PAUL MORENO',estancia:'LA PRIMAVERA',cantidad:10,categoria:'VAQUILLAS',raza:'NELORE',edad:'12 MESES',obs:'CI: 9821301'},
+  {orden:2,lote:7,propietario:'CARLOS ANTELO SUAREZ',estancia:'SAN RAFAEL',cantidad:5,categoria:'VAQUILLAS',raza:'BRAHMAN',edad:'14 MESES',obs:''},
+  {orden:3,lote:11,propietario:'PATRICIA VACA DIEZ',estancia:'LA ESPERANZA',cantidad:8,categoria:'VACA',raza:'MESTIZA',edad:'36 MESES',obs:'CON CRIA'},
+  {orden:4,lote:15,propietario:'RODRIGO SALVATIERRA',estancia:'EL PORVENIR',cantidad:22,categoria:'TORILLOS',raza:'NELORE',edad:'18 MESES',obs:''},
+  {orden:5,lote:19,propietario:'MONICA PARADA RIOS',estancia:'SANTA ROSA',cantidad:14,categoria:'TORILLOS',raza:'ANELORADO',edad:'20 MESES',obs:''},
+  {orden:6,lote:24,propietario:'FERNANDO CRONEMBOLD',estancia:'LOS TAJIBOS',cantidad:3,categoria:'TORO',raza:'SENEPOL',edad:'36 MESES',obs:'REPRODUCTOR'},
+  {orden:7,lote:28,propietario:'LUCIA AYMALLA TORREZ',estancia:'CAMPO VERDE',cantidad:18,categoria:'TORILLOS',raza:'NELORE',edad:'15 MESES',obs:''},
+  {orden:8,lote:33,propietario:'GABRIEL PINTO VACA',estancia:'EL RETIRO',cantidad:6,categoria:'VACAS',raza:'NELORE',edad:'36 MESES',obs:'CON CRIA'},
+  {orden:9,lote:40,propietario:'JOSE LEDEZMA PAZ',estancia:'DONA LEONOR',cantidad:25,categoria:'TORILLOS',raza:'BRAHMAN',edad:'22 MESES',obs:''},
+  {orden:10,lote:47,propietario:'BEATRIZ ANTELO MELGAR',estancia:'LAS LOMAS',cantidad:9,categoria:'VAQUILLAS',raza:'NELORE',edad:'11 MESES',obs:''},
 ];
 
 function mkLot(d) {
