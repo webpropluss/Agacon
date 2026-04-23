@@ -461,10 +461,21 @@ tr.pend{border-left:3px solid var(--gold)}
               <span id="pf-edad" style="font-size:clamp(1.1rem,2.4vw,2.6rem);font-weight:900;color:#fff;text-transform:uppercase;line-height:1;text-align:center;word-break:break-word;">—</span>
             </div>
           </div>
-          <div style="background:var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.4rem .8rem;">
-            <span style="font-size:clamp(.8rem,1.5vw,1.4rem);letter-spacing:2px;color:rgba(255,255,255,.9);font-weight:900;white-space:nowrap;">PESO:</span>
-            <span id="pf-peso" style="font-family:'Courier New',monospace;font-size:clamp(2.5rem,9vw,9rem);font-weight:900;color:#fff;line-height:1;">—</span>
-            <span style="font-size:clamp(.8rem,1.5vw,1.4rem);letter-spacing:2px;color:rgba(255,255,255,.9);font-weight:900;">KG</span>
+          <div style="background:var(--blue);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.4rem .8rem;gap:.1rem;">
+            <!-- PESO TOTAL -->
+            <div style="display:flex;align-items:baseline;gap:.3rem;">
+              <span style="font-size:clamp(.65rem,1.2vw,1.1rem);letter-spacing:2px;color:rgba(255,255,255,.85);font-weight:700;white-space:nowrap;">PESO:</span>
+              <span id="pf-peso" style="font-family:'Courier New',monospace;font-size:clamp(1.8rem,6vw,6.5rem);font-weight:900;color:#fff;line-height:1;">—</span>
+              <span style="font-size:clamp(.65rem,1.2vw,1.1rem);letter-spacing:2px;color:rgba(255,255,255,.85);font-weight:700;">KG</span>
+            </div>
+            <!-- DIVIDER -->
+            <div style="width:80%;height:1px;background:rgba(255,255,255,.25);flex-shrink:0;"></div>
+            <!-- PROMEDIO -->
+            <div style="display:flex;align-items:baseline;gap:.3rem;">
+              <span style="font-size:clamp(.55rem,1vw,.95rem);letter-spacing:2px;color:rgba(255,255,255,.75);font-weight:700;white-space:nowrap;">PROM:</span>
+              <span id="pf-promedio" style="font-family:'Courier New',monospace;font-size:clamp(1.2rem,4vw,4.5rem);font-weight:900;color:#7ec8f7;line-height:1;">—</span>
+              <span style="font-size:clamp(.55rem,1vw,.95rem);letter-spacing:2px;color:rgba(255,255,255,.75);font-weight:700;">KG</span>
+            </div>
           </div>
         </div>
 
@@ -836,6 +847,8 @@ function goTo(screen) {
           setText('pf-edad', d.edad || '—');
           var pesoEl = document.getElementById('pf-peso');
           if (pesoEl) pesoEl.textContent = d.peso ? String(d.peso) : '—';
+          var promEl = document.getElementById('pf-promedio');
+          if (promEl) promEl.textContent = d.prom ? String(d.prom) : '—';
         } catch(e) {}
       }, 300);
     }
@@ -1130,6 +1143,10 @@ var LS_KEY = 'agacon_pub_state';
 function renderPublic() {
   if(!lots.length) return;
   var l=lots[cur]||{};
+  var cant = l.cantidad || 1;
+  var peso = l.peso || 0;
+  var prom = (peso > 0 && cant > 0) ? Math.round(peso / cant) : 0;
+
   // Mini preview
   setFlip('mini-lote',  String(l.lote||'—'));
   setFlip('mini-cant',  String(l.cantidad||'—'));
@@ -1146,9 +1163,11 @@ function renderPublic() {
   setText('pf-raza',    l.raza||'—');
   setText('pf-edad',    l.edad||'—');
   var pesoEl = document.getElementById('pf-peso');
-  if(pesoEl) pesoEl.textContent = l.peso?String(l.peso):'—';
+  if(pesoEl) pesoEl.textContent = peso ? String(peso) : '—';
+  var promEl = document.getElementById('pf-promedio');
+  if(promEl) promEl.textContent = prom ? String(prom) : '—';
   // localStorage for external tab
-  try{ localStorage.setItem(LS_KEY, JSON.stringify({lote:l.lote||'—',cant:l.cantidad||'—',peso:l.peso||'—',precio:l.precio||'0',categoria:l.categoria||'—',raza:l.raza||'—',edad:l.edad||'—',estancia:l.estancia||'—',ts:Date.now()})); }catch(e){}
+  try{ localStorage.setItem(LS_KEY, JSON.stringify({lote:l.lote||'—',cant:l.cantidad||'—',peso:peso||'—',prom:prom||'—',precio:l.precio||'0',categoria:l.categoria||'—',raza:l.raza||'—',edad:l.edad||'—',estancia:l.estancia||'—',ts:Date.now()})); }catch(e){}
 }
 
 function showPublic() {
@@ -2703,10 +2722,17 @@ function balanzaUpdateUI() {
   var cant = lots[cur] ? (lots[cur].cantidad || 1) : 1;
   var prom = cant > 0 ? Math.round(balPesoActual / cant) : 0;
 
+  // Update balanza panel
   var elPeso = document.getElementById('bal-peso');
   var elProm = document.getElementById('bal-promedio');
   if (elPeso) elPeso.textContent = balPesoActual;
   if (elProm) elProm.textContent = prom;
+
+  // Update lot peso in real time so public screen shows it live
+  if (lots[cur]) {
+    lots[cur].peso = balPesoActual;
+    renderPublic(); // updates localStorage + public screen
+  }
 }
 
 function balanzaCapturar() {
@@ -2772,6 +2798,8 @@ var _origRenderOp = typeof renderOp === 'function' ? renderOp : null;
           setText('pf-edad', d.edad || '—');
           var pesoEl = document.getElementById('pf-peso');
           if (pesoEl) pesoEl.textContent = d.peso ? String(d.peso) : '—';
+          var promEl = document.getElementById('pf-promedio');
+          if (promEl) promEl.textContent = d.prom ? String(d.prom) : '—';
         } catch(e) {}
       }, 300);
     });
