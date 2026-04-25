@@ -330,7 +330,8 @@ tr.pend{border-left:3px solid var(--gold)}
             <div class="mini-scores">
               <div class="mini-cell"><div class="mini-label">LOTE</div><div class="mini-digit" id="mini-lote">—</div></div>
               <div class="mini-cell"><div class="mini-label">CANT.</div><div class="mini-digit" id="mini-cant">—</div></div>
-              <div class="mini-cell mpeso"><div class="mini-label">PESO</div><div class="mini-digit" id="mini-peso">—</div></div>
+              <div class="mini-cell mpeso"><div class="mini-label">PESO kg</div><div class="mini-digit" id="mini-peso" style="font-size:.85rem;">—</div></div>
+              <div class="mini-cell mpeso"><div class="mini-label">PROM kg</div><div class="mini-digit" id="mini-prom" style="font-size:.85rem;background:var(--green)">—</div></div>
               <div class="mini-cell mprice"><div class="mini-label">PRECIO</div><div class="mini-digit" id="mini-price">0</div></div>
             </div>
             <div class="mini-bar">
@@ -344,7 +345,21 @@ tr.pend{border-left:3px solid var(--gold)}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;flex:1;min-height:0">
           <!-- Price box -->
           <div class="price-box">
-            <div class="peso-bar">
+            <!-- BALANZA PANEL - solo conexión -->
+        <div id="balanza-panel" style="display:none;background:#0a1628;border:1px solid #1a9ad6;border-radius:8px;padding:.45rem .8rem;flex-direction:row;align-items:center;gap:.6rem;flex-shrink:0;flex-wrap:wrap;">
+          <span style="font-size:.58rem;letter-spacing:2px;color:#1a9ad6;text-transform:uppercase;font-weight:700;">⚖ Balanza</span>
+          <span id="bal-status" style="font-size:.65rem;color:var(--muted);flex:1;">● Desconectada — el peso aparece en tiempo real abajo</span>
+          <select id="bal-baud" style="background:#111;border:1px solid var(--border);color:#fff;border-radius:4px;padding:.2rem .4rem;font-size:.68rem;">
+            <option value="9600">9600 baud</option>
+            <option value="4800">4800 baud</option>
+            <option value="19200">19200 baud</option>
+            <option value="38400">38400 baud</option>
+          </select>
+          <button class="tbtn" onclick="balanzaConnect()" id="bal-connect-btn" style="font-size:.65rem;padding:.25rem .65rem;border-color:#1a9ad6;color:#1a9ad6;">Conectar</button>
+          <button class="tbtn" onclick="balanzaDisconnect()" id="bal-disconnect-btn" style="font-size:.65rem;padding:.25rem .65rem;display:none;border-color:var(--red);color:var(--red);">Desconectar</button>
+        </div>
+
+        <div class="peso-bar">
               <label>⚖ PESO (kg)</label>
               <input type="number" id="f-peso" placeholder="0" min="0" step="1" oninput="onPesoChange()">
             </div>
@@ -1151,6 +1166,7 @@ function renderPublic() {
   setFlip('mini-lote',  String(l.lote||'—'));
   setFlip('mini-cant',  String(l.cantidad||'—'));
   setFlip('mini-peso',  l.peso?String(l.peso):'—');
+  setFlip('mini-prom',  prom?String(prom):'—');
   setFlip('mini-price', String(l.precio||'0'));
   setText('mini-cat',   l.categoria||'—');
   setText('mini-raza',  l.raza||'—');
@@ -2676,6 +2692,8 @@ async function balanzaConnect() {
     document.getElementById('bal-disconnect-btn').style.display = 'inline';
     document.getElementById('btn-balanza').style.borderColor    = 'var(--green)';
     document.getElementById('btn-balanza').style.color          = 'var(--green)';
+    document.getElementById('bal-status').textContent = '● Conectada — el peso se actualiza en tiempo real';
+    document.getElementById('bal-status').style.color = 'var(--green)';
     toast('Balanza conectada ✓');
     balanzaRead();
   } catch(err) {
@@ -2719,20 +2737,13 @@ function balanzaParsear() {
 }
 
 function balanzaUpdateUI() {
-  var cant = lots[cur] ? (lots[cur].cantidad || 1) : 1;
-  var prom = cant > 0 ? Math.round(balPesoActual / cant) : 0;
-
-  // Update balanza panel
-  var elPeso = document.getElementById('bal-peso');
-  var elProm = document.getElementById('bal-promedio');
-  if (elPeso) elPeso.textContent = balPesoActual;
-  if (elProm) elProm.textContent = prom;
-
-  // Update lot peso in real time so public screen shows it live
-  if (lots[cur]) {
-    lots[cur].peso = balPesoActual;
-    renderPublic(); // updates localStorage + public screen
-  }
+  if (!lots[cur]) return;
+  // Write directly to the peso field in real time
+  var pesoField = document.getElementById('f-peso');
+  if (pesoField) pesoField.value = balPesoActual;
+  // Update the lot and public screen
+  lots[cur].peso = balPesoActual;
+  onPesoChange(); // triggers renderPublic which updates localStorage + public screen
 }
 
 function balanzaCapturar() {
