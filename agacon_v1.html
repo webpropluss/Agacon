@@ -445,15 +445,15 @@ tr.pend{border-left:3px solid var(--gold)}
           </div>
           <!-- 3 Red boxes -->
           <div style="display:grid;grid-template-columns:3fr 3fr 4fr;gap:.6rem;flex:1;min-height:0;">
-            <div style="background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:clamp(4rem,13vw,13rem);font-weight:900;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.5);position:relative;overflow:hidden;">
+            <div style="background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:clamp(5rem,16vw,16rem);font-weight:900;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.5);position:relative;overflow:hidden;">
               <div style="position:absolute;top:0;left:0;right:0;height:45%;background:rgba(255,255,255,.07);border-radius:12px 12px 0 0;"></div>
               <span id="pf-lote" style="z-index:1;">—</span>
             </div>
-            <div style="background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:clamp(4rem,13vw,13rem);font-weight:900;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.5);position:relative;overflow:hidden;">
+            <div style="background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:clamp(5rem,16vw,16rem);font-weight:900;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.5);position:relative;overflow:hidden;">
               <div style="position:absolute;top:0;left:0;right:0;height:45%;background:rgba(255,255,255,.07);border-radius:12px 12px 0 0;"></div>
               <span id="pf-cant" style="z-index:1;">—</span>
             </div>
-            <div style="background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:clamp(4rem,13vw,13rem);font-weight:900;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.5);position:relative;overflow:hidden;">
+            <div style="background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:clamp(5rem,16vw,16rem);font-weight:900;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.5);position:relative;overflow:hidden;">
               <div style="position:absolute;top:0;left:0;right:0;height:45%;background:rgba(255,255,255,.07);border-radius:12px 12px 0 0;"></div>
               <span id="pf-price" style="z-index:1;">0</span>
             </div>
@@ -462,21 +462,26 @@ tr.pend{border-left:3px solid var(--gold)}
 
         <!-- BOTTOM 50%: Green bar + Blue peso/prom -->
         <div style="flex:1;display:grid;grid-template-columns:3fr 2fr;gap:.6rem;min-height:0;">
-          <!-- Green: categoria raza edad -->
-          <div style="background:var(--green);border-radius:12px;display:flex;align-items:center;justify-content:space-around;padding:.5rem 1rem;gap:.3rem;">
-            <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
-              <span style="font-size:clamp(.6rem,1.1vw,1rem);letter-spacing:2px;color:rgba(255,255,255,.8);text-transform:uppercase;font-weight:700;">CATEGORÍA</span>
-              <span id="pf-cat" style="font-size:clamp(1.5rem,3.5vw,4rem);font-weight:900;color:#fff;text-transform:uppercase;line-height:1;text-align:center;word-break:break-word;">—</span>
+          <!-- Green: CATEGORIA | RAZA arriba, EDAD abajo -->
+          <div style="background:var(--green);border-radius:12px;display:flex;flex-direction:column;justify-content:center;padding:.4rem .8rem;gap:.2rem;">
+            <!-- Fila superior: CATEGORIA | RAZA -->
+            <div style="display:flex;align-items:center;justify-content:space-around;gap:.3rem;flex:1;">
+              <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+                <span style="font-size:clamp(.55rem,1vw,.9rem);letter-spacing:2px;color:rgba(255,255,255,.8);text-transform:uppercase;font-weight:700;">CATEGORÍA</span>
+                <span id="pf-cat" style="font-size:clamp(1.6rem,3.8vw,4.2rem);font-weight:900;color:#fff;text-transform:uppercase;line-height:1;text-align:center;word-break:break-word;">—</span>
+              </div>
+              <div style="width:2px;height:60%;background:rgba(255,255,255,.3);flex-shrink:0;align-self:center;"></div>
+              <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+                <span style="font-size:clamp(.55rem,1vw,.9rem);letter-spacing:2px;color:rgba(255,255,255,.8);text-transform:uppercase;font-weight:700;">RAZA</span>
+                <span id="pf-raza" style="font-size:clamp(1.6rem,3.8vw,4.2rem);font-weight:900;color:#fff;text-transform:uppercase;line-height:1;text-align:center;word-break:break-word;">—</span>
+              </div>
             </div>
-            <div style="width:2px;height:55%;background:rgba(255,255,255,.3);flex-shrink:0;"></div>
-            <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
-              <span style="font-size:clamp(.6rem,1.1vw,1rem);letter-spacing:2px;color:rgba(255,255,255,.8);text-transform:uppercase;font-weight:700;">RAZA</span>
-              <span id="pf-raza" style="font-size:clamp(1.5rem,3.5vw,4rem);font-weight:900;color:#fff;text-transform:uppercase;line-height:1;text-align:center;word-break:break-word;">—</span>
-            </div>
-            <div style="width:2px;height:55%;background:rgba(255,255,255,.3);flex-shrink:0;"></div>
-            <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
-              <span style="font-size:clamp(.6rem,1.1vw,1rem);letter-spacing:2px;color:rgba(255,255,255,.8);text-transform:uppercase;font-weight:700;">EDAD</span>
-              <span id="pf-edad" style="font-size:clamp(1.5rem,3.5vw,4rem);font-weight:900;color:#fff;text-transform:uppercase;line-height:1;text-align:center;word-break:break-word;">—</span>
+            <!-- Divisor -->
+            <div style="width:90%;height:1px;background:rgba(255,255,255,.25);align-self:center;"></div>
+            <!-- Fila inferior: EDAD centrada -->
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <span style="font-size:clamp(.55rem,1vw,.9rem);letter-spacing:2px;color:rgba(255,255,255,.8);text-transform:uppercase;font-weight:700;">EDAD</span>
+              <span id="pf-edad" style="font-size:clamp(1.4rem,3.2vw,3.6rem);font-weight:900;color:#fff;text-transform:uppercase;line-height:1;text-align:center;">—</span>
             </div>
           </div>
           <!-- Blue: peso total (celeste arriba) + promedio (blanco fuerte abajo) -->
@@ -484,7 +489,7 @@ tr.pend{border-left:3px solid var(--gold)}
             <!-- PESO - celeste, más chico -->
             <div style="display:flex;align-items:baseline;gap:.25rem;opacity:.85;">
               <span style="font-size:clamp(.6rem,1.1vw,1rem);letter-spacing:2px;color:#7ec8f7;font-weight:700;white-space:nowrap;">PESO:</span>
-              <span id="pf-peso" style="font-family:'Courier New',monospace;font-size:clamp(1.4rem,5vw,5.5rem);font-weight:900;color:#7ec8f7;line-height:1;">—</span>
+              <span id="pf-peso" style="font-family:'Courier New',monospace;font-size:clamp(2rem,7vw,7.5rem);font-weight:900;color:#7ec8f7;line-height:1;">—</span>
               <span style="font-size:clamp(.6rem,1.1vw,1rem);letter-spacing:2px;color:#7ec8f7;font-weight:700;">KG</span>
             </div>
             <div style="width:80%;height:2px;background:rgba(255,255,255,.3);border-radius:2px;"></div>
@@ -492,7 +497,7 @@ tr.pend{border-left:3px solid var(--gold)}
             <div style="display:flex;flex-direction:column;align-items:center;gap:.1rem;">
               <span style="font-size:clamp(.7rem,1.3vw,1.1rem);letter-spacing:3px;color:#fff;font-weight:900;text-transform:uppercase;">PROM / ANIMAL</span>
               <div style="display:flex;align-items:baseline;gap:.3rem;">
-                <span id="pf-promedio" style="font-family:'Courier New',monospace;font-size:clamp(2.5rem,8vw,9rem);font-weight:900;color:#fff;line-height:1;text-shadow:0 0 20px rgba(255,255,255,.4);">—</span>
+                <span id="pf-promedio" style="font-family:'Courier New',monospace;font-size:clamp(3rem,10vw,11rem);font-weight:900;color:#fff;line-height:1;text-shadow:0 0 20px rgba(255,255,255,.4);">—</span>
                 <span style="font-size:clamp(.8rem,1.5vw,1.4rem);letter-spacing:2px;color:#fff;font-weight:900;">KG</span>
               </div>
             </div>
@@ -931,7 +936,12 @@ function pinSaveAll() {
   });
 }
 
-// pinRequired inlined in goToWithPin
+function pinRequired(screen) {
+  var map = {operador:'operador', compradores:'compradores', admin:'admin'};
+  var key = map[screen];
+  var pin = (_pins[key] || '').trim();
+  return pin.length > 0 ? pin : null;
+}
 
 function pinPrompt(screen, onSuccess) {
   var names = {operador:'🎙 Operador', compradores:'👤 Compradores', admin:'📊 Administración'};
